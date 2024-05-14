@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plants vs Zombies</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #board {
+            border: 2px solid black;
+            width: 813px;
+            height: 404px;
+            display: flex;
+            flex-wrap: wrap;
+            background-image: url(grass.jpg);
+            background-repeat: no-repeat;
+            background-size: 814px 530px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: 1px solid gray;
+            position: relative;
+        }
+        .plant {
+            width: 80px;
+            height: 80px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+        .sunflower {
+            background-color: yellow;
+            border-radius: 50%;
+        }
+        .peashooter {
+            background-image: url(PeaShooter_Idle1.gif); /* Zielony */
+            width: 600px;
+            height: 508px;
+            background-repeat: no-repeat;
+            background-size: 15% 15%;
+        }
+        .walnut {
+            background-color: #8B4513; /* Brązowy */
+            border-radius: 50%;
+        }
+        .potato-mine {
+            background-color: #8B4513; /* Brązowy */
+            border-radius: 50%;
+        }
+        .zombie {
+            width: 250px;
+            height: 392px;
+            background-image: url(Regular_Zombie.png); /* Czerwony */
+            background-repeat: no-repeat;
+            background-size: 25% 25%;
+            position: absolute;
+            top: 5px;
+            right: 10px; /* Początkowa pozycja z prawej strony */
+        }
+        .pea {
+            width: 250px;
+            height: 392px;
+            background-image: url(pea.png);
+            background-repeat: no-repeat;
+            background-size: 12% 8%;
+            position: absolute;
+            top: 10px;
+            left: 80px; /* Początkowa pozycja, ustawiona poza widokiem planszy */
+        }
+    </style>
+</head>
+<body>
+    <div id="board"></div>
+
+    <script>
+        const numRows = 4;
+        const numCols = 8;
+        const board = document.getElementById('board');
+
+        // Funkcja obsługująca kliknięcie na komórkę planszy
+        function handleCellClick(event) {
+            const cell = event.target;
+            if (cell.classList.contains('cell') && !cell.querySelector('.plant')) {
+                const plantType = prompt("Wybierz roślinę: 1 - Słonecznik, 2 - Groch, 3 - Młotek, 4 - Potato Mine");
+                if (plantType === "1") {
+                    const plant = document.createElement('div');
+                    plant.classList.add('plant', 'sunflower');
+                    cell.appendChild(plant);
+                } else if (plantType === "2") {
+                    const plant = document.createElement('div');
+                    plant.classList.add('plant', 'peashooter');
+                    cell.appendChild(plant);
+                } else if (plantType === "3") {
+                    const plant = document.createElement('div');
+                    plant.classList.add('plant', 'walnut');
+                    cell.appendChild(plant);
+                } else if (plantType === "4") {
+                    const plant = document.createElement('div');
+                    plant.classList.add('plant', 'potato-mine');
+                    cell.appendChild(plant);
+                    setTimeout(() => {
+                        plant.style.backgroundColor = 'transparent'; // zmiana koloru na przeźroczysty po pewnym czasie
+                        // dodaj więcej logiki tutaj, aby obsłużyć wybuch
+                    }, 5000); // czas w milisekundach przed wybuchem
+                }
+            }
+        }
+
+        // Tworzenie planszy
+        for (let i = 0; i < numRows; i++) {
+            for (let j = 0; j < numCols; j++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.addEventListener('click', handleCellClick); // Dodanie obsługi kliknięcia
+                board.appendChild(cell);
+            }
+        }
+
+       // Funkcja poruszająca zombie
+function moveZombies() {
+    const zombies = document.querySelectorAll('.zombie');
+    zombies.forEach(zombie => {
+        const cell = zombie.parentElement;
+        const prevCell = cell.previousElementSibling; // Przesuwamy się do poprzedniej komórki
+
+        if (prevCell && !prevCell.querySelector('.plant')) {
+            prevCell.appendChild(zombie);
+        } else {
+            if (!prevCell) {
+                // Jeśli nie ma poprzedniej komórki, zombie wyszło za planszę, usuń je
+                zombie.remove();
+            } else {
+                // Jeśli następna komórka jest zajęta, ale zombie nie opuściło planszy, usuń je
+                if (prevCell.querySelector('.plant')) {
+                    zombie.remove();
+                }
+            }
+        }
+    });
+}
+
+        // Funkcja obsługująca strzelanie grochem
+        function shootPeas() {
+            const peashooters = document.querySelectorAll('.peashooter');
+            peashooters.forEach(peashooter => {
+                const cell = peashooter.parentElement;
+                const nextCell = cell.nextElementSibling; // Przesuwamy się do następnej komórki
+
+                if (nextCell && nextCell.querySelector('.zombie')) {
+                    const pea = document.createElement('div');
+                    pea.classList.add('pea');
+                    nextCell.appendChild(pea);
+                    // Przesuń groch w prawo co 100 milisekund
+                    const moveInterval = setInterval(() => {
+                        const leftPosition = parseInt(pea.style.left || "0");
+                        pea.style.left = (leftPosition + 10) + "px";
+                        if (leftPosition > 525) {
+                            clearInterval(moveInterval); // Zatrzymaj ruch, gdy groch opuści planszę
+                            pea.remove(); // Usuń groch z planszy
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        // Dodawanie zombie co 3 sekundy
+        setInterval(() => {
+            const randomRow = Math.floor(Math.random() * numRows);
+            const cell = board.children[randomRow * numCols + numCols - 0]; // Prawy kraniec planszy
+            const zombie = document.createElement('div');
+            zombie.classList.add('zombie');
+            cell.appendChild(zombie);
+        }, 3000);
+
+        // Poruszanie zombie co 1 sekundę
+        setInterval(moveZombies, 1000);
+
+        // Strzelanie grochem co 1 sekundę
+        setInterval(shootPeas, 1000);
+    </script>
+</body>
+</html>
